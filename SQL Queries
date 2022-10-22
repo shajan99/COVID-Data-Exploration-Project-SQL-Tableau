@@ -1,0 +1,107 @@
+### Data exploration of Coivd 19 data using SQL
+### Skills used: Joins, CTE's, Windows Functions, Aggregate Functions, Creating Views, Converting Data Types
+
+SELECT * 
+FROM covid.CovidDeaths
+ORDER BY 3, 4
+
+
+# Select data that we are going to be using
+
+SELECT location, date, total_cases, new_cases, total_deaths, population
+FROM covid.CovidDeaths
+ORDER BY 1, 2
+
+
+
+# Total cases vs total deaths
+# Shows likelihood of dying based on country
+
+SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as deaths_percentage
+FROM covid.CovidDeaths
+ORDER BY 1, 2
+
+
+
+# Total cases vs population
+# Shows what perecntage of population contracted Covid
+
+SELECT location, date, total_cases, population, (total_cases/population)*100 as infected_population_percentage
+FROM covid.CovidDeaths
+ORDER BY 1, 2
+
+
+
+# Countries with highest infection rate as percentage of population
+
+SELECT location, population, MAX(total_cases) as highest_infection_count,  MAX((total_cases/population))*100 as percent_population_infected
+FROM covid.CovidDeaths
+GROUP BY location, population
+ORDER BY percent_population_infected DESC
+
+
+
+# Countries with highest death count
+
+SELECT location, MAX(total_deaths) as total_death_count
+FROM covid.CovidDeaths
+WHERE continent is not NULL 
+GROUP BY location
+ORDER BY total_death_count DESC
+
+
+
+# Contintents with highest death count
+
+SELECT continent, MAX(total_deaths) as total_death_count
+FROM covid.CovidDeaths
+WHERE continent is not NULL 
+GROUP BY continent
+ORDER BY total_death_count DESC
+
+# Dataset or Query not accurate. North Americas number only includes United States
+
+
+
+# On the globla scale
+
+SELECT SUM(new_cases) as total_cases, SUM(new_deaths) as total_deaths, SUM(new_deaths)/SUM(new_cases)*100 as death_percentage
+FROM covid.CovidDeaths
+WHERE continent is not NULL 
+
+# Global death percentage of 2.11%
+
+
+
+# Percentage of population that has recieved at least one dose of a Covid vaccine
+
+SELECT dex.continent, dex.location, dex.date, dex.population, vax.new_vaccinations
+, SUM(vax.new_vaccinations) OVER (PARTITION BY dex.location ORDER BY dex.location, dex.date) as rolling_vaccination_count
+# , (rolling_vaccination_count/population)*100 
+FROM covid.CovidDeaths as dex
+JOIN covid.CovidVaccinations as vax
+	on dex.location = vax.location
+	and dex.date = vax.date
+WHERE dex.continent is not NULL 
+ORDER BY 2,3
+
+# The part of this query commented out is not running because you cant use a new variable made in a query for a calculation in the same query
+# To work around this, we use a CTE, which approximates a Temp Table
+
+
+
+# Using CTE for calculating percentage of population that has recieved at least one dose of a Covid vaccine
+
+WITH PopulationVaccinated as (
+  SELECT dex.continent, dex.location, dex.date, dex.population, vax.new_vaccinations
+  , SUM(vax.new_vaccinations) OVER (PARTITION BY dex.location ORDER BY dex.location, dex.date) as rolling_vaccination_count
+  FROM covid.CovidDeaths as dex
+  JOIN covid.CovidVaccinations as vax
+	  on dex.location = vax.location
+	  and dex.date = vax.date
+  WHERE dex.continent is not NULL
+)
+SELECT *, (rolling_vaccination_count/Population)*100 as rolling_vaccination_percentage
+FROM PopulationVaccinated
+
+# These results show a time series of the percentage of population with at least one dose of a Covid vaccine
