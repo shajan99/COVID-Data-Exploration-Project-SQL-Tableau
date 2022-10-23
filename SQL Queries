@@ -105,3 +105,18 @@ SELECT *, (rolling_vaccination_count/Population)*100 as rolling_vaccination_perc
 FROM PopulationVaccinated
 
 # These results show a time series of the percentage of population with at least one dose of a Covid vaccine
+
+
+
+# Creating View to store data for visualization later
+
+CREATE VIEW covid.VaccinatedPopulationCount as
+SELECT dex.continent, dex.location, dex.date, dex.population, vax.new_vaccinations
+, SUM(vax.new_vaccinations) OVER (PARTITION BY dex.location ORDER BY dex.location, dex.date) as rolling_vaccination_count 
+FROM covid.CovidDeaths as dex
+JOIN covid.CovidVaccinations as vax
+	on dex.location = vax.location
+	and dex.date = vax.date
+WHERE dex.continent is not NULL
+
+# Saves the result as a permanent table in the dataset
