@@ -86,7 +86,7 @@ WHERE dex.continent is not NULL
 ORDER BY 2,3
 
 --The part of this query commented out is not running because you cant use a new variable made in a query for a calculation in the same query
---To work around this, we use a CTE, which approximates a Temp Table
+--To work around this, we use a CTE or Temp Table
 
 
 
@@ -107,10 +107,10 @@ FROM PopulationVaccinated
 --These results show a time series of the percentage of population with at least one dose of a Covid vaccine
 
 
---Using Temp Table to perform Calculation on Partition By in previous query
+--Using Temp Table for calculating percentage of population that has recieved at least one dose of a Covid vaccine
 
 DROP TABLE if exists #PopulationVaccinated
---This is used for maing updates to the table
+--This is used for making updates to the table
 CREATE TABLE #PopulationVaccinated
 (
 continent nvarchar(255),
